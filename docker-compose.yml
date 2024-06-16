@@ -1,0 +1,55 @@
+services:
+  webserver:
+    restart: always
+    container_name: ${WEB_HOST}
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./webserver
+    volumes:
+      - /home/app/webserver/node_modules
+      - ./webserver:/home/app/webserver
+    env_file:
+      - .env
+    environment:
+      - VUE_APP_API_URL=${API_PROTOCOL}://${BASE_URL}:${API_PORT}
+      - VUE_APP_TITLE=${VUE_APP_TITLE}
+    ports:
+      - "${PORT}:${PORT}"
+
+  apiserver:
+    restart: always
+    container_name: ${API_HOST}
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./apiserver
+      args:
+        API_PORT: ${API_PORT}
+    volumes:
+      - /home/app/apiserver/node_modules
+      - ./apiserver:/home/app/apiserver
+    env_file:
+      - .env
+    ports:
+      - '${API_PORT}:${API_PORT}'
+    depends_on:
+      - mongo
+  
+  mongo:
+    image: mongo:7.0.11
+    container_name: ${MONGODB_HOST}
+    restart: always
+    volumes:
+      - db_data:/data/${MONGODB_DB}
+    env_file:
+      - .env
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGODB_DB}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - '${MONGODB_PORT}:${MONGODB_PORT}'
+    expose:
+      - ${MONGODB_PORT}
+
+volumes:
+  db_data:
